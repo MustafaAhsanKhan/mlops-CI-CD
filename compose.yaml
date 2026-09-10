@@ -1,0 +1,5 @@
+services:
+  ml-api:
+    build: .
+    ports:
+      - "5001:5000" # ponytail: host 5000 is taken by macOS AirPlay Receiver
