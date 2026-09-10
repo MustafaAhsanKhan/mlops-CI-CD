@@ -1,8 +1,13 @@
+import os
+
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-MODEL_VERSION = "1.1"
+# Baked into the image at build time by the CD workflow (see Dockerfile ARGs)
+APP_VERSION = os.environ.get("APP_VERSION", "dev")
+GIT_COMMIT = os.environ.get("GIT_COMMIT", "unknown")
+MODEL_VERSION = "model-7"
 
 
 @app.route("/")
@@ -16,8 +21,10 @@ def home():
 @app.route("/health")
 def health():
     return jsonify({
-        "status": "healthy",
-        "model_version": MODEL_VERSION
+        "application_version": APP_VERSION,
+        "model_version": MODEL_VERSION,
+        "git_commit": GIT_COMMIT,
+        "status": "healthy"
     })
 
 
