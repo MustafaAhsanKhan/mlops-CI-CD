@@ -1,0 +1,55 @@
+name: Rollback Production
+
+# Redeploys an already-published, immutable image. Nothing is rebuilt.
+# ponytail: no approval gate here; rolling back is the emergency path and dispatching it already needs repo write access.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Known-good version to restore (e.g. 1.2.0)"
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  rollback:
+    runs-on: self-hosted
+
+    environment:
+      name: production
+      url: http://localhost:5003/health
+
+    steps:
+      # Input arrives via env, never interpolated into the script, and must be strict semver
+      - name: Validate version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::'$VERSION' is not X.Y.Z"; exit 1; }
+          OWNER=$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE=ghcr.io/$OWNER/ml-api:$VERSION" >> "$GITHUB_ENV"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Roll back production
+        run: |
+          docker pull "$IMAGE"
+          docker rm -f mlops-api-production || true
+          docker run -d \
+            --name mlops-api-production \
+            --restart unless-stopped \
+            -p 5003:5000 \
+            "$IMAGE"
+
+      - name: Verify production
+        run: |
+          curl --fail --silent --show-error \
+            --retry 10 --retry-all-errors --retry-delay 2 \
+            http://localhost:5003/health
