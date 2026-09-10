@@ -65,6 +65,8 @@ jobs:
         run: |
           docker build \
             --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
+            --build-arg APP_VERSION=${{ steps.version.outputs.version }} \
+            --build-arg GIT_COMMIT=${GITHUB_SHA:0:7} \
             -t ${{ steps.version.outputs.image }}:${{ steps.version.outputs.version }} \
             -t ${{ steps.version.outputs.image }}:latest \
             .
