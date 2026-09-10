@@ -27,3 +27,28 @@ jobs:
 
       - name: Run tests
         run: pytest
+
+  build:
+    needs: test
+    runs-on: self-hosted # ponytail: this Mac (arm64, Colima) is the build + deploy host; no separate servers
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      image: ${{ steps.version.outputs.image }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          # Registry image names must be lowercase; the GitHub owner name is not
+          IMAGE=ghcr.io/$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')/ml-api
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Show version
+        run: |
+          echo "Building version ${{ steps.version.outputs.version }} as ${{ steps.version.outputs.image }}"
