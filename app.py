@@ -7,7 +7,7 @@ app = Flask(__name__)
 # Baked into the image at build time by the CD workflow (see Dockerfile ARGs)
 APP_VERSION = os.environ.get("APP_VERSION", "dev")
 GIT_COMMIT = os.environ.get("GIT_COMMIT", "unknown")
-MODEL_VERSION = "model-7"
+MODEL_VERSION = "model-8"
 
 
 @app.route("/")
